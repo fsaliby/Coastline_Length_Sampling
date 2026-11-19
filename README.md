@@ -33,12 +33,15 @@ not a measurement-error model. Before interpreting a fitted `D`, read
   round-off.
 - Every archive records its full configuration, map diagnostics and software
   versions.
+- Three example datasets with ready-to-run scripts: a Koch curve of known dimension,
+  the Búzios peninsula (Brazil) and the west coast of Britain (GSHHG).
 
 ## Contents
 
 - [Repository layout](#repository-layout)
 - [Installation](#installation)
-- [Quick start: the Búzios example](#quick-start-the-búzios-example)
+- [Example datasets](#example-datasets)
+- [Quick start](#quick-start)
 - [Input data](#input-data)
 - [Curve model](#curve-model)
 - [Estimators](#estimators)
@@ -62,14 +65,21 @@ coastline_kernels.py         compiled (Numba) kernels of the estimators
 coastline_run.py             stage 1: sweep driver, statistics, archive
 coastline_mc_fit.py          stage 2: Monte-Carlo power-law fit
 
-Buzios_Peninsula.kml                   example coastline (489 vertices, 38.2 km)
-run_Buzios_Peninsula_RP_kml.sh         example: random points + fit
-run_Buzios_Peninsula_YS_kml_fit.sh     example: yardstick + fit
+Buzios_Peninsula.kml                   example: Búzios peninsula, Brazil (KML)
+koch_8_theta60.txt                     example: Koch curve, level 8 (synthetic, D known)
+britain_west_gshhg.txt                 example: west coast of Britain (GSHHG 2.3.7)
+run_Buzios_Peninsula_RP_kml.sh         random points + fit, Búzios
+run_Buzios_Peninsula_YS_kml_fit.sh     yardstick + fit, Búzios
+run_koch_8_RP.sh                       random points + fit, Koch
+run_koch_8_YS_fit.sh                   yardstick + fit, Koch
+run_Britain_West_RP.sh                 random points + fit, Britain
+run_Britain_West_YS_fit.sh             yardstick + fit, Britain
 
 calibration/make_test_curves.py        Koch curve (D = 1.262) and smooth sinusoid (D = 1)
 calibration/run_calibration.sh         runs the Búzios settings on all three curves
 calibration/plot_local_dimension.py    draws docs/local_dimension.png
-docs/local_dimension.png
+docs/plot_datasets.py                  draws docs/local_dimension_datasets.png
+docs/*.png                             figures used in this README
 ```
 
 ## Installation
@@ -90,19 +100,48 @@ There is nothing to build. Run the scripts from the repository root (all six mod
 must be in the same directory or on `PYTHONPATH`). The Numba kernels are compiled on
 first use and cached.
 
-## Quick start: the Búzios example
+## Example datasets
 
-`Buzios_Peninsula.kml` is a 38.2 km stretch of the Búzios peninsula (Rio de Janeiro,
-Brazil), digitised as a single line of 489 vertices (median spacing 61 m).
+| Dataset | File | Vertices | Length | Spacing | Fit windows |
+|---|---|---|---|---|---|
+| Koch curve, level 8 | `koch_8_theta60.txt` | 65 537 | 199.77 km | 3.05 m (uniform) | RP `n_p` 100–1000; YS 0.063–0.439 km |
+| Búzios peninsula, Brazil | `Buzios_Peninsula.kml` | 489 | 38.2 km | 61 m (median) | RP `n_p` 10–50; YS 0.585–2.34 km |
+| Britain, west coast | `britain_west_gshhg.txt` | 26 706 | 5470 km | 142 m (median) | RP `n_p` 20–200; YS 13.7–74.8 km |
+
+- **Koch curve** (synthetic validation): eight generations of the 60° Koch
+  construction on a 20 km base at the equator, so `L = 20 (4/3)^8` km and
+  `D = log 4 / log 3 = 1.2619` exactly.
+- **Búzios peninsula**: a stretch of the Búzios peninsula (Rio de Janeiro, Brazil),
+  digitised as a single KML line.
+- **West coast of Britain**: Land's End to Cape Wrath, an approximate extract of the
+  full-resolution (level 1) shoreline of GSHHG version 2.3.7. GSHHG is distributed
+  under the GNU Lesser General Public License, version 3 or later. Cite it as:
+  Wessel, P., and W. H. F. Smith (1996), A global, self-consistent, hierarchical,
+  high-resolution shoreline database, *J. Geophys. Res.*, 101(B4), 8741–8743,
+  [doi:10.1029/96JB00104](https://doi.org/10.1029/96JB00104).
+
+Each dataset has two scripts, one per estimator; each runs stage 1 and then stage 2.
+The fit windows were chosen on the plateau of the local dimension of each curve (see
+[Results on the example datasets](#results-on-the-example-datasets)).
+
+## Quick start
 
 ```bash
-bash run_Buzios_Peninsula_RP_kml.sh       # random points, n_p = 5..1000, fit over 10..50
-bash run_Buzios_Peninsula_YS_kml_fit.sh   # yardstick, rulers 0.585..2.34 km
+bash run_koch_8_RP.sh                     # Koch: random points + fit
+bash run_koch_8_YS_fit.sh                 # Koch: yardstick + fit
+bash run_Buzios_Peninsula_RP_kml.sh       # Búzios
+bash run_Buzios_Peninsula_YS_kml_fit.sh
+bash run_Britain_West_RP.sh               # Britain
+bash run_Britain_West_YS_fit.sh
+python docs/plot_datasets.py              # plateau figure of the three RP runs
 ```
 
-Each script runs stage 1 and then stage 2, writing to `Buzios_Peninsula_kml_results/`.
-The RP script stores 996 resolutions × 100 000 realisations and needs about 4–5 GB
-of RAM; see [Performance and memory](#performance-and-memory) for a lighter variant.
+Results are written to `koch_8_results/`, `Buzios_Peninsula_kml_results/` and
+`Britain_West_results/`. Each RP script stores 996 resolutions × 100 000 realisations
+and needs about 4–5 GB of RAM; see [Performance and memory](#performance-and-memory)
+for a lighter variant. Each YS script runs 10⁶ surveys per ruler; on the Koch curve
+(about 1000 stations per survey at the smallest ruler) this takes of the order of 10
+minutes on 12 threads.
 
 Smaller runs, one stage at a time:
 
@@ -355,6 +394,41 @@ only finer digitisation can extend the range.
 
 The random-points local dimension is smooth enough to read directly. The yardstick
 one, from 20 rulers, oscillates and is better judged from the fit.
+
+### Results on the example datasets
+
+Settings of the six example scripts, with fewer realisations (10 000 RP with
+logarithmic spacing, 20 000 YS); median `D` and 16–84 % range of the fits to
+individual realisations (`--curves realisation`, `--fit nonlinear`):
+
+| Dataset | Random points | Yardstick |
+|---|---|---|
+| Koch curve, level 8 (exact 1.2619) | 1.2600 [1.2484, 1.2720] | 1.2630 [1.2613, 1.2646] |
+| Búzios peninsula | 1.230 [1.173, 1.302] | 1.229 [1.209, 1.250] |
+| Britain, west coast | 1.353 [1.296, 1.420] | 1.332 [1.320, 1.345] |
+
+![Local dimension versus scale for the Koch curve, Búzios and the west coast of Britain](docs/local_dimension_datasets.png)
+
+- **Koch curve.** Both estimators recover the exact dimension to within 0.002. The
+  random-points local dimension is flat (1.260–1.261) across the fit window. The
+  yardstick on an exactly self-similar curve is a staircase: the station count stays
+  at 1024, 512, 256, … over ranges of rulers, so its fitted `D` depends on where the
+  window falls within the factor-3 cycle. Windows of the same width shifted by a
+  quarter, a half and three quarters of a cycle gave 1.259–1.269, and a window of
+  ratio 9 gave 1.284. The yardstick validation is therefore good to about ±0.01–0.02;
+  natural coastlines are not exactly self-similar and do not show this staircase.
+- **Búzios.** A short plateau (0.6–2.2 km, about 0.6 decades), bounded below by the
+  digitisation; see [Plateau test](#plateau-test).
+- **West coast of Britain.** The random-points local dimension has a plateau at
+  1.34–1.37 between about 14 and 66 km and falls on both sides (1.21 at 3.6 km, 1.23
+  at 130 km); the fit window, 12.6–71.6 km in effective ruler, lies on it. The two
+  estimators differ by 0.02, which is best reported as a systematic uncertainty of
+  the method. The classical value for this coast, D ≈ 1.25 (Mandelbrot 1967, *Science*
+  156, 636–638, from Richardson's data), was obtained from other maps and over another
+  range of scales.
+
+The values in these tables come from shortened runs; the full example scripts use
+10⁵ (RP) and 10⁶ (YS) realisations.
 
 ## Stage 1 reference: `coastline_run.py`
 
