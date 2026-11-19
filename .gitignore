@@ -1,0 +1,17 @@
+# Python and Numba caches (Numba writes *.nbi / *.nbc next to the sources)
+__pycache__/
+*.py[cod]
+*.nbi
+*.nbc
+
+# Run outputs
+results/
+*_results/
+calibration/results/
+calibration/koch.txt
+calibration/sine.txt
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,8 @@
+numpy
+scipy
+# optional: --engine numba
+numba
+# optional: --n-jobs other than 1
+joblib
+# optional: calibration/plot_local_dimension.py
+matplotlib
